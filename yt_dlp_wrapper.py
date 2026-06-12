@@ -5,6 +5,17 @@ import argparse
 from pathlib import Path
 from typing import List, Tuple, Optional, Union
 
+# Section names
+SECTION_DOWNLOADED = 'Downloaded'
+SECTION_FAILED = 'Failed'
+SECTION_PENDING = 'Not downloaded yet'
+SECTION_OTHER = 'Other'
+
+# Default section headers
+HEADER_DOWNLOADED = '## Downloaded'
+HEADER_FAILED = '## Failed'
+HEADER_PENDING = '## Not downloaded yet'
+
 # Regex to find a URL in a line.
 # It looks for http/https followed by non-space characters,
 # but stops at characters that usually end a URL in Markdown context like ) or ].
@@ -31,19 +42,19 @@ def parse_markdown(file_path: Union[str, Path]) -> List[Tuple[str, str]]:
         return []
 
     section_map = []
-    current_section = 'Other'
+    current_section = SECTION_OTHER
     
     for line in lines:
         stripped = line.strip()
         
         if RE_DOWNLOADED.match(stripped):
-            current_section = 'Downloaded'
+            current_section = SECTION_DOWNLOADED
         elif RE_FAILED.match(stripped):
-            current_section = 'Failed'
+            current_section = SECTION_FAILED
         elif RE_PENDING.match(stripped):
-            current_section = 'Not downloaded yet'
+            current_section = SECTION_PENDING
         elif RE_ANY_HEADER.match(stripped):
-            current_section = 'Other'
+            current_section = SECTION_OTHER
             
         section_map.append((current_section, line))
 
@@ -60,7 +71,7 @@ def save_markdown(file_path: Union[str, Path], section_map: List[Tuple[str, str]
     content = "".join(line for _, line in section_map)
     file_path.write_text(content, encoding='utf-8')
 
-def download_video(link: str, output_dir: Union[str, Path], yt_dlp_path: str = DEFAULT_YT_DLP_PATH) -> Tuple[bool, bool]:
+def download_video(link: str, output_dir: Union[str, Path], yt_dlp_path: Union[str, Path] = DEFAULT_YT_DLP_PATH) -> Tuple[bool, bool]:
     """Runs yt-dlp for a given link and streams output to the console.
     Returns (success, already_existed).
     """
@@ -99,7 +110,7 @@ def move_link_to_section(
     target_link: str, 
     target_section_label: str, 
     target_section_header: str,
-    source_section_label: str = 'Not downloaded yet'
+    source_section_label: str = SECTION_PENDING
 ) -> None:
     """Moves a link from the source section to the specified target section."""
     file_path = Path(file_path).expanduser()
@@ -177,39 +188,46 @@ def cleanup_markdown(file_path: Union[str, Path]) -> None:
         link = extract_link(line)
         if not link:
             continue
-        if section == 'Downloaded':
+        if section == SECTION_DOWNLOADED:
             downloaded_links.add(link)
-        elif section == 'Failed':
+        elif section == SECTION_FAILED:
             failed_links.add(link)
 
     # 2. Rebuild the map, filtering out duplicates
     new_section_map = []
     seen_in_processed_sections = set()
+    removed_links = []
     
     for section, line in section_map:
         link = extract_link(line)
         
         # Keep non-link lines and lines in 'Other' sections as-is
-        if not link or section == 'Other':
+        if not link or section == SECTION_OTHER:
             new_section_map.append((section, line))
             continue
             
         is_duplicate = False
-        if section == 'Downloaded':
+        if section == SECTION_DOWNLOADED:
             if link in seen_in_processed_sections:
                 is_duplicate = True
-        elif section == 'Failed':
+        elif section == SECTION_FAILED:
             if link in downloaded_links or link in seen_in_processed_sections:
                 is_duplicate = True
-        elif section == 'Not downloaded yet':
+        elif section == SECTION_PENDING:
             if link in downloaded_links or link in failed_links or link in seen_in_processed_sections:
                 is_duplicate = True
         
         if is_duplicate:
+            removed_links.append(link)
             continue
             
         seen_in_processed_sections.add(link)
         new_section_map.append((section, line))
+    
+    if removed_links:
+        print(f">>> Removed {len(removed_links)} duplicated link(s):")
+        for link in removed_links:
+            print(f"  [REMOVED] {link}")
         
     save_markdown(file_path, new_section_map)
     print(">>> Cleanup complete.")
@@ -235,7 +253,7 @@ def print_summary(downloaded: List[str], failed: List[str], already_existed: Lis
             print(f"  [FAIL] {link}")
     print("="*40)
 
-def process_queue(input_file: str, output_dir: str, verify: bool = False, yt_dlp_path: str = DEFAULT_YT_DLP_PATH) -> Tuple[List[str], List[str], List[str]]:
+def process_queue(input_file: Union[str, Path], output_dir: Union[str, Path], verify: bool = False, yt_dlp_path: Union[str, Path] = DEFAULT_YT_DLP_PATH) -> Tuple[List[str], List[str], List[str]]:
     """Processes the Markdown file and downloads videos in the queue.
     If verify is True, processes the 'Downloaded' section instead.
     Returns (downloaded, failed, already_existed).
@@ -248,7 +266,7 @@ def process_queue(input_file: str, output_dir: str, verify: bool = False, yt_dlp
     failed_this_session: List[str] = []
     already_existed_this_session: List[str] = []
 
-    source_section = 'Downloaded' if verify else 'Not downloaded yet'
+    source_section = SECTION_DOWNLOADED if verify else SECTION_PENDING
     print(f">>> Scanning section '{source_section}' for links...")
 
     try:
@@ -286,11 +304,11 @@ def process_queue(input_file: str, output_dir: str, verify: bool = False, yt_dlp
                 
                 if not verify:
                     print(f">>> Moving link to 'Downloaded' section.")
-                    move_link_to_section(input_path, target_link, 'Downloaded', '## Downloaded')
+                    move_link_to_section(input_path, target_link, SECTION_DOWNLOADED, HEADER_DOWNLOADED)
             else:
                 print(f">>> Download failed! Moving link to 'Failed' section.")
                 failed_this_session.append(target_link)
-                move_link_to_section(input_path, target_link, 'Failed', '## Failed', source_section_label=source_section)
+                move_link_to_section(input_path, target_link, SECTION_FAILED, HEADER_FAILED, source_section_label=source_section)
     except KeyboardInterrupt:
         print("\n\nProcess interrupted by user.")
 

@@ -58,11 +58,11 @@ class TestYtDlpWrapper(unittest.TestCase):
 
         section_map = wrapper.parse_markdown(self.md_file)
         expected = [
-            ('Other', '# My Videos\n'),
-            ('Downloaded', '## Downloaded\n'),
-            ('Downloaded', '- https://link1.com\n'),
-            ('Not downloaded yet', '## Not downloaded yet\n'),
-            ('Not downloaded yet', '- https://link2.com\n')
+            (wrapper.SECTION_OTHER, '# My Videos\n'),
+            (wrapper.SECTION_DOWNLOADED, '## Downloaded\n'),
+            (wrapper.SECTION_DOWNLOADED, '- https://link1.com\n'),
+            (wrapper.SECTION_PENDING, '## Not downloaded yet\n'),
+            (wrapper.SECTION_PENDING, '- https://link2.com\n')
         ]
         self.assertEqual(section_map, expected)
 
@@ -75,7 +75,7 @@ class TestYtDlpWrapper(unittest.TestCase):
         with open(self.md_file, 'w') as f:
             f.write(content)
 
-        wrapper.move_link_to_section(self.md_file, "https://link1.com", 'Downloaded', '## Downloaded')
+        wrapper.move_link_to_section(self.md_file, "https://link1.com", wrapper.SECTION_DOWNLOADED, wrapper.HEADER_DOWNLOADED)
 
         with open(self.md_file, 'r') as f:
             new_content = f.read()
@@ -91,7 +91,7 @@ class TestYtDlpWrapper(unittest.TestCase):
         with open(self.md_file, 'w') as f:
             f.write(content)
 
-        wrapper.move_link_to_section(self.md_file, "https://link1.com", 'Failed', '## Failed')
+        wrapper.move_link_to_section(self.md_file, "https://link1.com", wrapper.SECTION_FAILED, wrapper.HEADER_FAILED)
 
         with open(self.md_file, 'r') as f:
             new_content = f.read()
@@ -105,7 +105,7 @@ class TestYtDlpWrapper(unittest.TestCase):
         with open(self.md_file, 'w') as f:
             f.write(content)
 
-        wrapper.move_link_to_section(self.md_file, "https://link1.com", 'Downloaded', '## Downloaded')
+        wrapper.move_link_to_section(self.md_file, "https://link1.com", wrapper.SECTION_DOWNLOADED, wrapper.HEADER_DOWNLOADED)
 
         with open(self.md_file, 'r') as f:
             new_content = f.read()
@@ -122,7 +122,7 @@ class TestYtDlpWrapper(unittest.TestCase):
         with open(self.md_file, 'w') as f:
             f.write(content)
 
-        wrapper.move_link_to_section(self.md_file, "https://link1.com", 'Downloaded', '## Downloaded')
+        wrapper.move_link_to_section(self.md_file, "https://link1.com", wrapper.SECTION_DOWNLOADED, wrapper.HEADER_DOWNLOADED)
 
         with open(self.md_file, 'r') as f:
             new_content = f.read()
@@ -140,7 +140,7 @@ class TestYtDlpWrapper(unittest.TestCase):
         with open(self.md_file, 'w') as f:
             f.write(content)
 
-        wrapper.move_link_to_section(self.md_file, "https://link1.com", 'Downloaded', '## Downloaded')
+        wrapper.move_link_to_section(self.md_file, "https://link1.com", wrapper.SECTION_DOWNLOADED, wrapper.HEADER_DOWNLOADED)
 
         with open(self.md_file, 'r') as f:
             lines = f.readlines()
@@ -162,10 +162,10 @@ Some text
             f.write(content)
 
         section_map = wrapper.parse_markdown(self.md_file)
-        # ## Unknown Section should be 'Other'
-        # # Another Title should be 'Other'
-        self.assertEqual(section_map[3][0], 'Other')  # ## Unknown Section
-        self.assertEqual(section_map[5][0], 'Other')  # # Another Title
+        # ## Unknown Section should be SECTION_OTHER
+        # # Another Title should be SECTION_OTHER
+        self.assertEqual(section_map[3][0], wrapper.SECTION_OTHER)  # ## Unknown Section
+        self.assertEqual(section_map[5][0], wrapper.SECTION_OTHER)  # # Another Title
 
     def test_print_summary(self):
         with patch('sys.stdout') as mock_stdout:
@@ -295,7 +295,7 @@ Some text
         with open(self.md_file, 'w') as f:
             f.write(content)
 
-        wrapper.move_link_to_section(self.md_file, "https://link1.com", 'Downloaded', '## Downloaded')
+        wrapper.move_link_to_section(self.md_file, "https://link1.com", wrapper.SECTION_DOWNLOADED, wrapper.HEADER_DOWNLOADED)
 
         with open(self.md_file, 'r') as f:
             new_content = f.read()
@@ -315,7 +315,7 @@ Some text
         with open(self.md_file, 'w') as f:
             f.write(content)
 
-        wrapper.move_link_to_section(self.md_file, "https://link-new.com", 'Downloaded', '## Downloaded')
+        wrapper.move_link_to_section(self.md_file, "https://link-new.com", wrapper.SECTION_DOWNLOADED, wrapper.HEADER_DOWNLOADED)
 
         with open(self.md_file, 'r') as f:
             new_content = f.read()
@@ -331,7 +331,7 @@ Some text
 
     def test_move_link_to_section_no_file(self):
         # Line 93: if not section_map: return
-        wrapper.move_link_to_section("non_existent.md", "https://link.com", "Downloaded", "## Downloaded")
+        wrapper.move_link_to_section("non_existent.md", "https://link.com", wrapper.SECTION_DOWNLOADED, wrapper.HEADER_DOWNLOADED)
         # Should just return without error
 
     def test_move_link_to_section_link_not_found(self):
@@ -339,7 +339,7 @@ Some text
         content = "## Not downloaded yet\n- https://other.com\n"
         with open(self.md_file, 'w') as f:
             f.write(content)
-        wrapper.move_link_to_section(self.md_file, "https://missing.com", "Downloaded", "## Downloaded")
+        wrapper.move_link_to_section(self.md_file, "https://missing.com", wrapper.SECTION_DOWNLOADED, wrapper.HEADER_DOWNLOADED)
         # File should remain unchanged
         with open(self.md_file, 'r') as f:
             self.assertEqual(f.read(), content)
@@ -383,9 +383,9 @@ Some text
         wrapper.move_link_to_section(
             self.md_file, 
             "https://link1.com", 
-            'Failed', 
-            '## Failed', 
-            source_section_label='Downloaded'
+            wrapper.SECTION_FAILED, 
+            wrapper.HEADER_FAILED, 
+            source_section_label=wrapper.SECTION_DOWNLOADED
         )
 
         with open(self.md_file, 'r') as f:
@@ -413,8 +413,8 @@ Some text
 """
         self.md_file.write_text(content, encoding='utf-8')
         section_map = wrapper.parse_markdown(self.md_file)
-        self.assertEqual(section_map[0][0], 'Downloaded')
-        self.assertEqual(section_map[2][0], 'Not downloaded yet')
+        self.assertEqual(section_map[0][0], wrapper.SECTION_DOWNLOADED)
+        self.assertEqual(section_map[2][0], wrapper.SECTION_PENDING)
 
     def test_parse_markdown_case_insensitive(self):
         content = """## downloaded
@@ -424,8 +424,8 @@ Some text
 """
         self.md_file.write_text(content, encoding='utf-8')
         section_map = wrapper.parse_markdown(self.md_file)
-        self.assertEqual(section_map[0][0], 'Downloaded')
-        self.assertEqual(section_map[2][0], 'Not downloaded yet')
+        self.assertEqual(section_map[0][0], wrapper.SECTION_DOWNLOADED)
+        self.assertEqual(section_map[2][0], wrapper.SECTION_PENDING)
 
     def test_parse_markdown_no_space_after_hash(self):
         content = """##Downloaded
@@ -433,7 +433,7 @@ Some text
 """
         self.md_file.write_text(content, encoding='utf-8')
         section_map = wrapper.parse_markdown(self.md_file)
-        self.assertEqual(section_map[0][0], 'Downloaded')
+        self.assertEqual(section_map[0][0], wrapper.SECTION_DOWNLOADED)
 
     def test_move_link_to_h1_header(self):
         content = """# Downloaded
@@ -442,7 +442,7 @@ Some text
 - https://link-new.com
 """
         self.md_file.write_text(content, encoding='utf-8')
-        wrapper.move_link_to_section(self.md_file, "https://link-new.com", 'Downloaded', '## Downloaded')
+        wrapper.move_link_to_section(self.md_file, "https://link-new.com", wrapper.SECTION_DOWNLOADED, wrapper.HEADER_DOWNLOADED)
         
         new_content = self.md_file.read_text()
         self.assertIn('# Downloaded\n- https://link-existing.com\n- https://link-new.com\n', new_content)
@@ -560,6 +560,26 @@ Some text
         self.assertIn("## Failed\n- https://link2.com\n", new_content)
         self.assertNotIn("## Failed\n- https://link1.com", new_content)
         self.assertEqual(new_content.count("https://link2.com"), 1)
+
+    def test_cleanup_markdown_logging(self):
+        content = """## Downloaded
+- https://link1.com
+## Not downloaded yet
+- https://link1.com
+- https://link2.com
+- https://link2.com
+"""
+        self.md_file.write_text(content, encoding='utf-8')
+        with patch('sys.stdout') as mock_stdout:
+            wrapper.cleanup_markdown(self.md_file)
+            
+            # Get all print calls
+            printed_text = "".join(call.args[0] for call in mock_stdout.write.call_args_list if call.args)
+            
+            # Check for the logging messages
+            self.assertIn("Removed 2 duplicated link(s):", printed_text)
+            self.assertIn("[REMOVED] https://link1.com", printed_text)
+            self.assertIn("[REMOVED] https://link2.com", printed_text)
 
 if __name__ == '__main__':
     unittest.main()
