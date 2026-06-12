@@ -13,9 +13,13 @@ A Python wrapper for `yt-dlp` that allows you to manage video download queues di
 - **Automatic Status Tracking**: Links are automatically moved between sections based on the download result:
     - From `## Not downloaded yet` to `## Downloaded` on success.
     - From `## Not downloaded yet` to `## Failed` on failure.
+- **Verify Mode**: Use the `--verify` flag to check if videos in the `## Downloaded` section are still present in your output directory and re-download them if missing.
+- **Path Resolution**: Supports relative paths and home directory expansion (e.g., `~/Downloads/videos`).
+- **Custom yt-dlp Path**: Use the `--yt-dlp-path` flag to specify a custom location for the `yt-dlp` executable. Defaults to `~/bin/yt-dlp_linux`.
+- **Default Naming**: Uses `yt-dlp`'s default output template (typically `%(title)s [%(id)s].%(ext)s`), ensuring compatibility with standard downloads and robust verification.
 - **Real-time Progress**: Streams `yt-dlp` output directly to your console so you can see the download progress.
 - **Flexible Parsing**: Supports various Markdown link formats (plain URLs, labeled links like `[Title](URL)`, or list items).
-- **Session Summary**: Provides a clear report of successful and failed downloads at the end of each run.
+- **Session Summary**: Provides a clear report of successful, failed, and already existing downloads at the end of each run.
 - **Interrupt Handling**: Gracefully handles `Ctrl+C` to stop the process and save the current state.
 
 ## Prerequisites
@@ -44,6 +48,22 @@ Run the wrapper by specifying your Markdown queue file and the desired output di
 
 ```bash
 python3 yt_dlp_wrapper.py <queue_file.md> <output_directory>
+```
+
+### Verify Mode
+
+To verify existing downloads and re-download missing ones from the `## Downloaded` section:
+
+```bash
+python3 yt_dlp_wrapper.py <queue_file.md> <output_directory> --verify
+```
+
+### Custom yt-dlp Path
+
+If you want to use a specific `yt-dlp` binary or override the default `~/bin/yt-dlp_linux`:
+
+```bash
+python3 yt_dlp_wrapper.py <queue_file.md> <output_directory> --yt-dlp-path ./yt-dlp
 ```
 
 ### Example
