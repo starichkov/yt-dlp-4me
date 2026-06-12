@@ -33,7 +33,13 @@ def parse_markdown(file_path: Union[str, Path]) -> List[Tuple[str, str]]:
             current_section = 'Failed'
         elif stripped.startswith('## Not downloaded yet'):
             current_section = 'Not downloaded yet'
-        elif stripped.startswith('##') or (stripped.startswith('# ') and i > 0):
+        elif (stripped.startswith('## ') or stripped == '##') and not (
+            stripped.startswith('## Downloaded') or 
+            stripped.startswith('## Failed') or 
+            stripped.startswith('## Not downloaded yet')
+        ):
+            current_section = 'Other'
+        elif stripped.startswith('# ') and i > 0:
             current_section = 'Other'
             
         section_map.append((current_section, line))
@@ -106,11 +112,16 @@ def move_link_to_section(file_path: Union[str, Path], target_link: str, section_
             break
     
     if target_header_idx != -1:
-        insert_pos = target_header_idx + 1
-        # Skip everything that belongs to this section
-        while insert_pos < len(section_map) and section_map[insert_pos][0] == section_label:
-            insert_pos += 1
+        # Find the last line that belongs to this section and has content
+        last_content_idx = target_header_idx
+        for i in range(target_header_idx + 1, len(section_map)):
+            if section_map[i][0] == section_label:
+                if section_map[i][1].strip():
+                    last_content_idx = i
+            else:
+                break
         
+        insert_pos = last_content_idx + 1
         section_map.insert(insert_pos, (section_label, moving_line[1]))
     else:
         # Create the section if missing

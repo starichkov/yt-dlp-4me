@@ -268,5 +268,65 @@ Some text
         self.assertIn('## Failed\n- https://link2.com\n', new_content)
 
 
+    def test_move_link_to_section_append_with_blank_lines(self):
+        content = """# Videos
+## Downloaded
+- https://link-existing.com
+
+## Not downloaded yet
+- https://link1.com
+"""
+        with open(self.md_file, 'w') as f:
+            f.write(content)
+
+        wrapper.move_link_to_section(self.md_file, "https://link1.com", 'Downloaded', '## Downloaded')
+
+        with open(self.md_file, 'r') as f:
+            new_content = f.read()
+
+        # Should be inserted right after existing items, before the blank line
+        expected = "# Videos\n## Downloaded\n- https://link-existing.com\n- https://link1.com\n\n## Not downloaded yet\n"
+        self.assertEqual(new_content, expected)
+
+    def test_move_link_to_section_with_l3_header(self):
+        content = """# Videos
+## Downloaded
+### Subheader
+- https://link-old.com
+## Not downloaded yet
+- https://link-new.com
+"""
+        with open(self.md_file, 'w') as f:
+            f.write(content)
+
+        wrapper.move_link_to_section(self.md_file, "https://link-new.com", 'Downloaded', '## Downloaded')
+
+        with open(self.md_file, 'r') as f:
+            new_content = f.read()
+
+        # Should be inserted at the end of the Downloaded section (after link-old)
+        self.assertIn("### Subheader\n- https://link-old.com\n- https://link-new.com\n", new_content)
+
+    def test_parse_markdown_read_error(self):
+        self.md_file.touch()
+        with patch.object(Path, 'read_text', side_effect=Exception("Read error")):
+            # Should return empty list and print error
+            self.assertEqual(wrapper.parse_markdown(self.md_file), [])
+
+    def test_move_link_to_section_no_file(self):
+        # Line 93: if not section_map: return
+        wrapper.move_link_to_section("non_existent.md", "https://link.com", "Downloaded", "## Downloaded")
+        # Should just return without error
+
+    def test_move_link_to_section_link_not_found(self):
+        # Line 103: if found_idx == -1: return
+        content = "## Not downloaded yet\n- https://other.com\n"
+        with open(self.md_file, 'w') as f:
+            f.write(content)
+        wrapper.move_link_to_section(self.md_file, "https://missing.com", "Downloaded", "## Downloaded")
+        # File should remain unchanged
+        with open(self.md_file, 'r') as f:
+            self.assertEqual(f.read(), content)
+
 if __name__ == '__main__':
     unittest.main()
