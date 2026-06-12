@@ -37,6 +37,10 @@ def parse_markdown(file_path: Union[str, Path]) -> List[Tuple[str, str]]:
 
     try:
         lines = file_path.read_text(encoding='utf-8').splitlines(keepends=True)
+        # Ensure the last line has a newline to avoid "messed up" formatting
+        # when moving lines or appending new ones.
+        if lines and not lines[-1].endswith(('\n', '\r')):
+            lines[-1] += '\n'
     except Exception as e:
         print(f"Error reading {file_path}: {e}")
         return []
@@ -277,17 +281,40 @@ def process_queue(input_file: Union[str, Path], output_dir: Union[str, Path], ve
                 break
                 
             target_link: Optional[str] = None
+            needs_rescan = False
             
-            # Find the first unprocessed link in source section
+            # Find the first link in source section
             for section, line in section_map:
                 if section == source_section:
                     link = extract_link(line)
-                    if link and link not in downloaded_this_session and \
-                       link not in failed_this_session and \
-                       link not in already_existed_this_session:
-                        target_link = link
+                    if not link:
+                        continue
+                    
+                    # If we've already processed this link this session, it's a duplicate.
+                    # We should move it without re-downloading to avoid infinite loop.
+                    if link in downloaded_this_session or link in already_existed_this_session:
+                        if not verify:
+                            print(f">>> Link '{link}' already processed this session. Moving to 'Downloaded' section.")
+                            move_link_to_section(input_path, link, SECTION_DOWNLOADED, HEADER_DOWNLOADED)
+                            needs_rescan = True
+                        else:
+                            # In verify mode, successful links stay in 'Downloaded'.
+                            # We skip them to avoid infinite loop.
+                            continue
                         break
+                    
+                    if link in failed_this_session:
+                        print(f">>> Link '{link}' already failed this session. Moving to 'Failed' section.")
+                        move_link_to_section(input_path, link, SECTION_FAILED, HEADER_FAILED, source_section_label=source_section)
+                        needs_rescan = True
+                        break
+
+                    target_link = link
+                    break
             
+            if needs_rescan:
+                continue
+                
             if not target_link:
                 # No more links to process
                 break
@@ -335,9 +362,11 @@ def main() -> None:
 
     if args.verify:
         print(f"Mode: Verify (checking '{input_path}' against '{output_path}')")
-        cleanup_markdown(args.input_file)
     else:
         print(f"Mode: Download (processing queue in '{input_path}')")
+
+    # Always perform cleanup/deduplication at the start
+    cleanup_markdown(args.input_file)
 
     downloaded, failed, skipped = process_queue(args.input_file, args.output_dir, verify=args.verify, yt_dlp_path=args.yt_dlp_path)
     print_summary(downloaded, failed, skipped)

@@ -228,6 +228,16 @@ Some text
                         wrapper.main()
                         self.assertTrue(mock_cleanup.called)
 
+    def test_main_cleanup_regular_mode(self):
+        with open(self.md_file, 'w') as f:
+            f.write("## Not downloaded yet\n- https://link.com\n")
+        with patch.object(wrapper, 'cleanup_markdown') as mock_cleanup:
+            with patch.object(wrapper, 'process_queue', return_value=([], [], [])):
+                with patch.object(wrapper, 'print_summary'):
+                    with patch('sys.argv', ['yt_dlp_wrapper.py', str(self.md_file), str(self.test_dir)]):
+                        wrapper.main()
+                        self.assertTrue(mock_cleanup.called)
+
     def test_process_queue_missing_file(self):
         downloaded, failed, skipped = wrapper.process_queue("missing.md", "out")
         self.assertEqual(downloaded, [])
@@ -580,6 +590,69 @@ Some text
             self.assertIn("Removed 2 duplicated link(s):", printed_text)
             self.assertIn("[REMOVED] https://link1.com", printed_text)
             self.assertIn("[REMOVED] https://link2.com", printed_text)
+
+    def test_parse_markdown_no_trailing_newline(self):
+        content = "## Not downloaded yet\n- https://link1.com"
+        self.md_file.write_text(content, encoding='utf-8')
+        section_map = wrapper.parse_markdown(self.md_file)
+        # It should have a newline now
+        self.assertEqual(section_map[1][1], "- https://link1.com\n")
+
+    def test_move_link_no_trailing_newline(self):
+        content = "## Downloaded\n## Not downloaded yet\n- https://link1.com"
+        # Note no newline after link1.com
+        self.md_file.write_text(content, encoding='utf-8')
+        
+        wrapper.move_link_to_section(self.md_file, "https://link1.com", wrapper.SECTION_DOWNLOADED, wrapper.HEADER_DOWNLOADED)
+        
+        new_content = self.md_file.read_text(encoding='utf-8')
+        # Header should NOT be appended to the link line
+        self.assertIn("## Downloaded\n- https://link1.com\n", new_content)
+        self.assertIn("## Not downloaded yet\n", new_content)
+        self.assertNotIn("https://link1.com##", new_content)
+
+    def test_process_queue_duplicates(self):
+        content = """## Not downloaded yet
+- https://link1.com
+- https://link1.com
+"""
+        with open(self.md_file, 'w') as f:
+            f.write(content)
+
+        with patch.object(wrapper, 'download_video', return_value=(True, False)) as mock_dl:
+            downloaded, failed, skipped = wrapper.process_queue(self.md_file, "out")
+            
+            # download_video should only be called once because the second one is recognized as already done
+            mock_dl.assert_called_once()
+            self.assertEqual(downloaded, ["https://link1.com"])
+            
+        with open(self.md_file, 'r') as f:
+            new_content = f.read()
+        
+        # Both occurrences should be in Downloaded
+        self.assertEqual(new_content.count("https://link1.com"), 2)
+        self.assertIn("## Downloaded\n- https://link1.com\n- https://link1.com\n", new_content)
+
+    def test_process_queue_duplicates_failed(self):
+        content = """## Not downloaded yet
+- https://link1.com
+- https://link1.com
+"""
+        with open(self.md_file, 'w') as f:
+            f.write(content)
+
+        with patch.object(wrapper, 'download_video', return_value=(False, False)) as mock_dl:
+            downloaded, failed, skipped = wrapper.process_queue(self.md_file, "out")
+            
+            mock_dl.assert_called_once()
+            self.assertEqual(failed, ["https://link1.com"])
+            
+        with open(self.md_file, 'r') as f:
+            new_content = f.read()
+        
+        # Both occurrences should be in Failed
+        self.assertEqual(new_content.count("https://link1.com"), 2)
+        self.assertIn("## Failed\n- https://link1.com\n- https://link1.com\n", new_content)
 
 if __name__ == '__main__':
     unittest.main()
