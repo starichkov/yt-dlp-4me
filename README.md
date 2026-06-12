@@ -1,3 +1,7 @@
+[![Author](https://img.shields.io/badge/Author-Vadim%20Starichkov-blue?style=for-the-badge)](https://github.com/starichkov)
+[![GitHub License](https://img.shields.io/github/license/starichkov/yt-dlp-4me?style=for-the-badge)](https://github.com/starichkov/yt-dlp-4me/blob/main/LICENSE.md)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/starichkov/yt-dlp-4me/python.yml?style=for-the-badge)](https://github.com/starichkov/yt-dlp-4me/actions/workflows/python.yml)
+
 # yt-dlp Markdown Wrapper
 
 A Python wrapper for `yt-dlp` that allows you to manage video download queues directly within Markdown files.
