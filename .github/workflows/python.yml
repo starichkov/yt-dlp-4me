@@ -33,3 +33,12 @@ jobs:
           source .venv/bin/activate
           coverage run test_wrapper.py
           coverage report -m
+
+      # Only upload coverage from the main Python version (3.14)
+      - name: Upload coverage to Codecov (only on Python 3.14)
+        if: matrix.python-version == '3.14'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          fail_ci_if_error: true

@@ -1,6 +1,7 @@
 [![Author](https://img.shields.io/badge/Author-Vadim%20Starichkov-blue?style=for-the-badge)](https://github.com/starichkov)
 [![GitHub License](https://img.shields.io/github/license/starichkov/yt-dlp-4me?style=for-the-badge)](https://github.com/starichkov/yt-dlp-4me/blob/main/LICENSE.md)
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/starichkov/yt-dlp-4me/python.yml?style=for-the-badge)](https://github.com/starichkov/yt-dlp-4me/actions/workflows/python.yml)
+[![Codecov](https://img.shields.io/codecov/c/github/starichkov/yt-dlp-4me?style=for-the-badge)](https://codecov.io/gh/starichkov/yt-dlp-4me)
 
 # yt-dlp Markdown Wrapper
 
