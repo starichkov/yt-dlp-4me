@@ -27,7 +27,7 @@ RE_FAILED = re.compile(r'^#{1,2}\s*Failed', re.IGNORECASE)
 RE_PENDING = re.compile(r'^#{1,2}\s*Not downloaded yet', re.IGNORECASE)
 RE_ANY_HEADER = re.compile(r'^#{1,2}(?![#])\s*')
 
-DEFAULT_YT_DLP_PATH = str(Path.home() / 'bin' / 'yt-dlp_linux')
+DEFAULT_YT_DLP_PATH = str('ytdlp')
 
 def parse_markdown(file_path: Union[str, Path]) -> List[Tuple[str, str]]:
     """Parses the Markdown file into a list of (section_name, line_text) tuples."""

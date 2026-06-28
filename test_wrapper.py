@@ -469,7 +469,7 @@ Some text
         
         args, _ = mock_popen.call_args
         cmd = args[0]
-        self.assertTrue(any("yt-dlp" in arg for arg in cmd))
+        self.assertTrue(any("ytdlp" in arg for arg in cmd))
         self.assertIn("-P", cmd)
         self.assertIn("out", cmd)
         self.assertNotIn("-o", cmd)
@@ -489,8 +489,7 @@ Some text
         self.assertEqual(cmd[0], custom_path)
 
     def test_default_yt_dlp_path(self):
-        self.assertIn('yt-dlp_linux', wrapper.DEFAULT_YT_DLP_PATH)
-        self.assertIn('bin', wrapper.DEFAULT_YT_DLP_PATH)
+        self.assertIn('ytdlp', wrapper.DEFAULT_YT_DLP_PATH)
 
     def test_path_expansion(self):
         # We can test if expanduser is called by mocking it

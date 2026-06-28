@@ -15,7 +15,7 @@ A Python wrapper for `yt-dlp` that allows you to manage video download queues di
     - From `## Not downloaded yet` to `## Failed` on failure.
 - **Verify Mode**: Use the `--verify` flag to check if videos in the `## Downloaded` section are still present in your output directory and re-download them if missing.
 - **Path Resolution**: Supports relative paths and home directory expansion (e.g., `~/Downloads/videos`).
-- **Custom yt-dlp Path**: Use the `--yt-dlp-path` flag to specify a custom location for the `yt-dlp` executable. Defaults to `~/bin/yt-dlp_linux`.
+- **Custom yt-dlp Path**: Use the `--yt-dlp-path` flag to specify a custom location for the `yt-dlp` executable. Defaults to just `ytdlp`.
 - **Default Naming**: Uses `yt-dlp`'s default output template (typically `%(title)s [%(id)s].%(ext)s`), ensuring compatibility with standard downloads and robust verification.
 - **Real-time Progress**: Streams `yt-dlp` output directly to your console so you can see the download progress.
 - **Flexible Parsing**: Supports various Markdown link formats (plain URLs, labeled links like `[Title](URL)`, or list items).
@@ -60,7 +60,7 @@ python3 yt_dlp_wrapper.py <queue_file.md> <output_directory> --verify
 
 ### Custom yt-dlp Path
 
-If you want to use a specific `yt-dlp` binary or override the default `~/bin/yt-dlp_linux`:
+If you want to use a specific `yt-dlp` binary or override the default `ytdlp`:
 
 ```bash
 python3 yt_dlp_wrapper.py <queue_file.md> <output_directory> --yt-dlp-path ./yt-dlp
